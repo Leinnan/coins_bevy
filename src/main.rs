@@ -1,18 +1,8 @@
+mod debug;
+mod consts;
+
 use bevy::prelude::*;
 use bevy_rapier2d::prelude::*;
-use bevy::prelude::Color;
-use bevy_egui::egui::Color32;
-use bevy_egui::EguiPlugin;
-use bevy_inspector_egui::{
-    bevy_inspector::hierarchy::SelectedEntities, DefaultInspectorConfigPlugin,
-};
-pub const MY_ACCENT_COLOR: Color = Color::Rgba {
-    red: 0.901,
-    green: 0.4,
-    blue: 0.01,
-    alpha: 1.0,
-};
-pub const MY_ACCENT_COLOR32: Color32 = Color32::from_rgb(230, 102, 1);
 
 #[derive(Component)]
 struct TextChanges;
@@ -23,13 +13,13 @@ fn main() {
         .insert_resource(Msaa::Off)
         .add_plugins((
             DefaultPlugins,
+            debug::DebugPlugin,
             RapierPhysicsPlugin::<NoUserData>::pixels_per_meter(100.0),
             RapierDebugRenderPlugin::default(),
         ))
         .add_systems(Startup, (setup_graphics, setup_physics))
         .add_systems(PostUpdate, display_events)
         .add_systems(Update, player_input)
-        .add_plugins((EguiPlugin, DefaultInspectorConfigPlugin))
         .run();
 }
 
@@ -39,17 +29,16 @@ fn setup_graphics(mut commands: Commands, asset_server: Res<AssetServer>) {
         TextBundle::from_section(
             "Press space to spawn ",
             TextStyle {
-                font: asset_server.load("Alagard.ttf"),
+                font: asset_server.load(consts::BASE_FONT),
                 font_size: 15.0,
-                color: MY_ACCENT_COLOR,
+                color: consts::MY_ACCENT_COLOR,
             },
         )
         .with_text_alignment(TextAlignment::Center)
         .with_style(Style {
             position_type: PositionType::Absolute,
-            top: Val::Px(5.0),
-            right: Val::Auto,
-            left: Val::Auto,
+            top: Val::Px(15.0),
+            left: Val::Px(15.0),
             ..default()
         }),
         TextChanges,
@@ -63,12 +52,12 @@ fn display_events(
 ) {
     for mut text in &mut query {
         for collision_event in collision_events.iter() {
-            text.sections[0].value = format!("Received collision event: {collision_event:?}");
+            text.sections[0].value = format!("Collision event: {collision_event:?}");
         }
 
         for contact_force_event in contact_force_events.iter() {
             text.sections[0].value =
-                format!("Received contact force event: {contact_force_event:?}");
+                format!("Contact force event: {contact_force_event:?}");
         }
     }
 }
