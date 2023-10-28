@@ -23,7 +23,7 @@ impl Plugin for DebugPlugin {
 fn git_info(mut commands: Commands, asset_server: Res<AssetServer>) {
     commands.spawn(
         TextBundle::from_section(
-            format!("{} ( {} )", GIT_DATE, &GIT_HASH[..7]),
+            format!("{} ( {} )", GIT_DATE, GIT_HASH),
             TextStyle {
                 font: asset_server.load(BASE_FONT),
                 font_size: 11.0,
@@ -79,7 +79,7 @@ fn inspector_ui(world: &mut World, mut selected_entities: Local<SelectedEntities
                     .color(MY_ACCENT_COLOR32),
             );
             ui.label(
-                egui::RichText::new(format!("{} ( {} )", GIT_DATE, &GIT_HASH[..7])).small(), // .weak(),
+                egui::RichText::new(format!("{} ( {} )", GIT_DATE, GIT_HASH)).small(), // .weak(),
             );
             ui.add_space(15.0);
             egui::ScrollArea::vertical().show(ui, |ui| {
