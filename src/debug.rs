@@ -30,13 +30,13 @@ fn git_info(mut commands: Commands, asset_server: Res<AssetServer>) {
                 color: MY_ACCENT_COLOR,
             },
         )
-            .with_text_alignment(TextAlignment::Right)
-            .with_style(Style {
-                position_type: PositionType::Absolute,
-                bottom: Val::Px(5.0),
-                right: Val::Px(5.0),
-                ..default()
-            }),
+        .with_text_alignment(TextAlignment::Right)
+        .with_style(Style {
+            position_type: PositionType::Absolute,
+            bottom: Val::Px(5.0),
+            right: Val::Px(5.0),
+            ..default()
+        }),
     );
 }
 
@@ -63,8 +63,12 @@ fn inspector_ui(world: &mut World, mut selected_entities: Local<SelectedEntities
                     ui,
                     &mut selected_entities,
                 );
-                ui.label(egui::RichText::new("Resources").strong().color(MY_ACCENT_COLOR32));
-                bevy_inspector_egui::bevy_inspector::ui_for_resources(world,ui);
+                ui.label(
+                    egui::RichText::new("Resources")
+                        .strong()
+                        .color(MY_ACCENT_COLOR32),
+                );
+                bevy_inspector_egui::bevy_inspector::ui_for_resources(world, ui);
 
                 ui.allocate_space(ui.available_size());
             });

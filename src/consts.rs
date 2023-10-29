@@ -1,4 +1,3 @@
-
 use bevy::prelude::Color;
 use bevy_egui::egui::Color32;
 pub const MY_ACCENT_COLOR: Color = Color::Rgba {
@@ -13,4 +12,3 @@ pub const GIT_HASH: &str = env!("GIT_HASH");
 pub const GIT_DATE: &str = env!("GIT_DATE");
 
 pub const BASE_FONT: &str = "fonts/Alagard.ttf";
-
