@@ -130,13 +130,18 @@ fn display_events(
 }
 
 pub fn setup_physics(mut commands: Commands, asset_server: Res<AssetServer>) {
-    /*
-     * Ground
-     */
+    let candle_radius = 45.0;
     commands.spawn((
         TransformBundle::from(Transform::from_xyz(0.0, -24.0, 0.0)),
-        Collider::cuboid(80.0, 20.0),
-    ));
+        Collider::ball(candle_radius),
+    )).insert(SpriteBundle{
+        texture: asset_server.load("candle.png"),
+        sprite: Sprite{
+            custom_size: Some(Vec2::splat(candle_radius * 2.0)),
+            ..default()
+        },
+        ..default()
+    });
 
     commands.spawn((
         TransformBundle::from(Transform::from_xyz(0.0, 100.0, 0.0)),
