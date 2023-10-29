@@ -178,7 +178,7 @@ fn player_input(buttons: Res<Input<MouseButton>>, mycoords: Res<MouseWorldPositi
             let dir = (position - vec2).normalize();
             eprintln!("{},{},{},{}",position,vec2,dir,strength);
             external.impulse = dir * strength;
-            external.torque_impulse = 1.0;
+            external.torque_impulse = 0.3;
         }
     }
 }
