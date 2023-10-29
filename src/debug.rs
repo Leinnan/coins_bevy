@@ -63,6 +63,8 @@ fn inspector_ui(world: &mut World, mut selected_entities: Local<SelectedEntities
                     ui,
                     &mut selected_entities,
                 );
+                ui.label(egui::RichText::new("Resources").strong().color(MY_ACCENT_COLOR32));
+                bevy_inspector_egui::bevy_inspector::ui_for_resources(world,ui);
 
                 ui.allocate_space(ui.available_size());
             });
