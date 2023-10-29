@@ -8,22 +8,53 @@ use bevy_rapier2d::prelude::*;
 #[derive(Component)]
 struct TextChanges;
 
+// Used to help identify coin controlled by player
 #[derive(Component)]
 struct PlayerControlled;
 
-/// We will store the world position of the mouse cursor here.
-#[derive(Resource, Default)]
-struct MyWorldCoords(Vec2);
+/// We store the world position of the mouse cursor here.
+#[derive(Resource, Default, Reflect)]
+struct MouseWorldPosition(Vec2);
 
 /// Used to help identify our main camera
 #[derive(Component)]
 struct MainCamera;
 
+#[derive(Resource, Reflect)]
+pub struct GameplaySettings
+{
+    pub min_force : Vec2,
+    pub max_force : Vec2
+}
+
+impl GameplaySettings{
+    pub fn get_shoot_strength(&self, distance: f32) -> Option<f32> {
+        if distance < self.min_force.x {
+            return None;
+        }
+        let strength = distance.min(self.max_force.x) / self.max_force.x * (self.max_force.y - self.min_force.y) + self.min_force.y;
+        eprintln!("Distance {distance} with strength: {strength}");
+        Some(strength)
+    }
+}
+
+impl Default for GameplaySettings {
+    fn default() -> Self {
+        GameplaySettings{
+            min_force: Vec2::new(25.0,1.0),
+            max_force: Vec2::new(150.0,125.0)
+        }
+    }
+}
+
 fn main() {
     App::new()
         .insert_resource(ClearColor(Color::rgb(0.09, 0.09, 0.13)))
         .insert_resource(Msaa::Off)
-        .init_resource::<MyWorldCoords>()
+        .register_type::<GameplaySettings>()
+        .register_type::<MouseWorldPosition>()
+        .init_resource::<MouseWorldPosition>()
+        .init_resource::<GameplaySettings>()
         .add_plugins((
             DefaultPlugins,
             debug::DebugPlugin,
@@ -36,7 +67,7 @@ fn main() {
         .run();
 }
 fn my_cursor_system(
-    mut mycoords: ResMut<MyWorldCoords>,
+    mut mycoords: ResMut<MouseWorldPosition>,
     // query to get the window (so we can read the current cursor position)
     q_window: Query<&Window, With<PrimaryWindow>>,
     // query to get camera transform
@@ -115,22 +146,27 @@ pub fn setup_physics(mut commands: Commands) {
     commands.spawn((
         TransformBundle::from(Transform::from_xyz(0.0, 260.0, 0.0)),
         RigidBody::Dynamic,
-        Collider::ball(11.0),
+        Collider::ball(13.0),
         ActiveEvents::COLLISION_EVENTS,
         ContactForceEventThreshold(10.0),
-    )).insert(Damping { linear_damping: 15.0, angular_damping: 1.0 }).insert(PlayerControlled).insert(GravityScale(0.0)).insert(ExternalImpulse {
-        impulse: Vec2::new(0.0, -0.0),
+    )).insert(Damping { linear_damping: 12.0, angular_damping: 1.0 }).insert(PlayerControlled).insert(GravityScale(0.0)).insert(ExternalImpulse {
+        impulse: Vec2::new(0.0, 0.0),
         torque_impulse: 0.0,
-    });
+    }).insert(Restitution::coefficient(0.95));
 }
 
-fn player_input(buttons: Res<Input<MouseButton>>, mycoords: Res<MyWorldCoords>,mut ext_impulses: Query<(&mut ExternalImpulse, &Transform), With<PlayerControlled>>) {
+fn player_input(buttons: Res<Input<MouseButton>>, mycoords: Res<MouseWorldPosition>, settings: Res<GameplaySettings>, mut ext_impulses: Query<(&mut ExternalImpulse, &Transform), With<PlayerControlled>>) {
     if buttons.just_pressed(MouseButton::Left) {
         let position = mycoords.0.clone();
 
         for (mut external, transform) in ext_impulses.iter_mut() {
             let vec2 = Vec2::new(transform.translation.x,transform.translation.y);
-            let strength = position.distance(vec2).min(200.0) / 3.0;
+            let distance = position.distance(vec2);
+            let strength = settings.get_shoot_strength(distance);
+            if strength.is_none() {
+                continue;
+            }
+            let strength = strength.unwrap();
             let dir = (position - vec2).normalize();
             eprintln!("{},{},{},{}",position,vec2,dir,strength);
             external.impulse = dir * strength;
