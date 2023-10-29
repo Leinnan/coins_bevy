@@ -129,7 +129,7 @@ fn display_events(
     }
 }
 
-pub fn setup_physics(mut commands: Commands) {
+pub fn setup_physics(mut commands: Commands, asset_server: Res<AssetServer>) {
     /*
      * Ground
      */
@@ -143,16 +143,24 @@ pub fn setup_physics(mut commands: Commands) {
         Collider::cuboid(80.0, 30.0),
         Sensor,
     ));
+    let radius = 20.0;
     commands.spawn((
         TransformBundle::from(Transform::from_xyz(0.0, 260.0, 0.0)),
         RigidBody::Dynamic,
-        Collider::ball(13.0),
+        Collider::ball(radius),
         ActiveEvents::COLLISION_EVENTS,
         ContactForceEventThreshold(10.0),
-    )).insert(Damping { linear_damping: 12.0, angular_damping: 1.0 }).insert(PlayerControlled).insert(GravityScale(0.0)).insert(ExternalImpulse {
+    )).insert(Damping { linear_damping: 8.0, angular_damping: 8.0 }).insert(PlayerControlled).insert(GravityScale(0.0)).insert(ExternalImpulse {
         impulse: Vec2::new(0.0, 0.0),
         torque_impulse: 0.0,
-    }).insert(Restitution::coefficient(0.95));
+    }).insert(Restitution::coefficient(0.95)).insert(SpriteBundle{
+        texture: asset_server.load("coin.png"),
+        sprite: Sprite{
+            custom_size: Some(Vec2::splat(radius * 2.0)),
+            ..default()
+        },
+        ..default()
+    });
 }
 
 fn player_input(buttons: Res<Input<MouseButton>>, mycoords: Res<MouseWorldPosition>, settings: Res<GameplaySettings>, mut ext_impulses: Query<(&mut ExternalImpulse, &Transform), With<PlayerControlled>>) {
@@ -170,7 +178,7 @@ fn player_input(buttons: Res<Input<MouseButton>>, mycoords: Res<MouseWorldPositi
             let dir = (position - vec2).normalize();
             eprintln!("{},{},{},{}",position,vec2,dir,strength);
             external.impulse = dir * strength;
-            external.torque_impulse = 0.0;
+            external.torque_impulse = 1.0;
         }
     }
 }
