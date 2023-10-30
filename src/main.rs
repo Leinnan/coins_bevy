@@ -205,7 +205,7 @@ pub fn setup_physics(mut commands: Commands, asset_server: Res<AssetServer>) {
     }
     let end_circle_size = 80.0;
     commands
-        .spawn((Collider::ball(end_circle_size), Sensor))
+        .spawn((Collider::ball(end_circle_size - 25.0), Sensor))
         .insert(SpriteBundle {
             transform: Transform::from_xyz(45.0, -190.0, 0.0),
             texture: asset_server.load("end_circle.png"),
