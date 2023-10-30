@@ -111,7 +111,7 @@ fn setup_graphics(mut commands: Commands, asset_server: Res<AssetServer>) {
                 color: consts::MY_ACCENT_COLOR,
             },
         )
-        .with_text_alignment(TextAlignment::Center)
+        .with_text_alignment(TextAlignment::Left)
         .with_style(Style {
             position_type: PositionType::Absolute,
             top: Val::Px(15.0),
@@ -180,6 +180,7 @@ pub fn setup_physics(mut commands: Commands, asset_server: Res<AssetServer>) {
         })
         .insert(PlayerControlled)
         .insert(GravityScale(0.0))
+        .insert(Velocity::zero())
         .insert(ExternalImpulse {
             impulse: Vec2::new(0.0, 0.0),
             torque_impulse: 0.0,
@@ -201,25 +202,27 @@ fn player_input(
     buttons: Res<Input<MouseButton>>,
     mouse_pos: Res<MouseWorldPosition>,
     settings: Res<GameplaySettings>,
-    mut ext_impulses: Query<(&mut ExternalImpulse, &Transform), With<PlayerControlled>>,
+    mut ext_impulses: Query<(&mut ExternalImpulse, &Transform, &Velocity), With<PlayerControlled>>,
     mut progress: ResMut<GameplayProgress>,
 ) {
     if buttons.just_pressed(MouseButton::Left) {
         let position = mouse_pos.0;
-
-        for (mut external, transform) in ext_impulses.iter_mut() {
-            let vec2 = Vec2::new(transform.translation.x, transform.translation.y);
-            let distance = position.distance(vec2);
-            let strength = settings.get_shoot_strength(distance);
-            if strength.is_none() {
-                continue;
-            }
-            let strength = strength.unwrap();
-            let dir = (position - vec2).normalize();
-            eprintln!("{},{},{},{}", position, vec2, dir, strength);
-            external.impulse = dir * strength;
-            external.torque_impulse = 0.3;
-            progress.moves = progress.moves + 1;
+        let (mut external, transform, velocity) = ext_impulses.single_mut();
+        if velocity.linvel.length() > 0.1 {
+            eprintln!("Still moving({}), skipping", velocity.linvel);
+            return;
         }
+        let vec2 = Vec2::new(transform.translation.x, transform.translation.y);
+        let distance = position.distance(vec2);
+        let strength = settings.get_shoot_strength(distance);
+        if strength.is_none() {
+            return;;
+        }
+        let strength = strength.unwrap();
+        let dir = (position - vec2).normalize();
+        eprintln!("{},{},{},{}", position, vec2, dir, strength);
+        external.impulse = dir * strength;
+        external.torque_impulse = 0.3;
+        progress.moves = progress.moves + 1;
     }
 }
