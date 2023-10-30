@@ -34,6 +34,7 @@ pub struct GameplaySettings {
 pub struct GameplayProgress {
     pub touches: i32,
     pub moves: i32,
+    pub is_inside_end_place: bool,
 }
 
 #[derive(Event)]
@@ -65,7 +66,7 @@ impl Default for GameplaySettings {
     fn default() -> Self {
         GameplaySettings {
             min_force: Vec2::new(25.0, 1.0),
-            max_force: Vec2::new(150.0, 125.0),
+            max_force: Vec2::new(150.0, 200.0),
         }
     }
 }
@@ -152,13 +153,26 @@ fn display_events(
     mut collision_events: EventReader<CollisionEvent>,
     mut contact_force_events: EventReader<ContactForceEvent>,
     mut query: Query<&mut Text, With<TextChanges>>,
+    second_query: Query<&Sensor>,
     mut progress: ResMut<GameplayProgress>,
 ) {
     for mut text in &mut query {
         for collision_event in collision_events.iter() {
             match collision_event {
-                CollisionEvent::Started(_, _, _) => progress.touches = progress.touches + 1,
-                CollisionEvent::Stopped(_, _, _) => {}
+                CollisionEvent::Started(e, e2, _) => {
+                    let is_sensor = second_query.contains(*e) || second_query.contains(*e2);
+                    if !is_sensor {
+                        progress.touches = progress.touches + 1;
+                    } else {
+                        progress.is_inside_end_place = true;
+                    }
+                }
+                CollisionEvent::Stopped(e, e2, _) => {
+                    let is_sensor = second_query.contains(*e) || second_query.contains(*e2);
+                    if is_sensor {
+                        progress.is_inside_end_place = false;
+                    }
+                }
             }
             text.sections[0].value = format!(
                 "Collisions: {}\nMoves: {}",
@@ -189,12 +203,19 @@ pub fn setup_physics(mut commands: Commands, asset_server: Res<AssetServer>) {
             })
             .insert(Name::new(format!("Candle {}x{}", pos.x, pos.y)));
     }
-
-    commands.spawn((
-        TransformBundle::from(Transform::from_xyz(0.0, 100.0, 0.0)),
-        Collider::cuboid(80.0, 30.0),
-        Sensor,
-    ));
+    let end_circle_size = 80.0;
+    commands
+        .spawn((Collider::ball(end_circle_size), Sensor))
+        .insert(SpriteBundle {
+            transform: Transform::from_xyz(45.0, -190.0, 0.0),
+            texture: asset_server.load("end_circle.png"),
+            sprite: Sprite {
+                custom_size: Some(Vec2::splat(end_circle_size * 2.0)),
+                ..default()
+            },
+            ..default()
+        })
+        .insert(Name::new("Finish point"));
     let radius = 20.0;
     commands
         .spawn((
@@ -204,8 +225,8 @@ pub fn setup_physics(mut commands: Commands, asset_server: Res<AssetServer>) {
             ContactForceEventThreshold(10.0),
         ))
         .insert(Damping {
-            linear_damping: 8.0,
-            angular_damping: 8.0,
+            linear_damping: 6.0,
+            angular_damping: 9.0,
         })
         .insert(PlayerControlled)
         .insert(GravityScale(0.0))
@@ -239,10 +260,12 @@ pub fn setup_physics(mut commands: Commands, asset_server: Res<AssetServer>) {
         .insert(PointerArrow);
 }
 
-fn velocity_changed(query: Query<&Velocity, Changed<Velocity>>) {
+fn velocity_changed(query: Query<&Velocity, Changed<Velocity>>, progress: Res<GameplayProgress>) {
     for velocity in &query {
         if velocity.linvel.length() > 0.1 {
             eprintln!("{:?} velocity", velocity);
+        } else if progress.is_inside_end_place {
+            eprintln!("WINNER!");
         }
     }
 }
@@ -308,7 +331,7 @@ fn arrow_display(
         transform.scale = Vec3::splat(ev.strength / settings.max_force.y * 0.6);
         transform.rotation = Quat::from_rotation_arc_2d(Vec2::new(0.0, 1.0), ev.direction);
     }
-    for ev in aim_event2.iter() {
+    for _ in aim_event2.iter() {
         transform.scale = Vec3::splat(0.0);
     }
 }
