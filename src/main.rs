@@ -37,12 +37,16 @@ pub struct GameplayProgress {
 }
 
 #[derive(Event)]
-struct AimingStartedEvent {
-    pub player_pos : Vec2,
+struct AimingEvent {
+    pub player_pos: Vec2,
     pub direction: Vec2,
-    pub strength: f32
+    pub strength: f32,
 }
 
+#[derive(Event)]
+struct AimingEndedEvent {
+    pub shoot: bool,
+}
 
 impl GameplaySettings {
     pub fn get_shoot_strength(&self, distance: f32) -> Option<f32> {
@@ -76,7 +80,8 @@ fn main() {
         .init_resource::<MouseWorldPosition>()
         .init_resource::<GameplaySettings>()
         .init_resource::<GameplayProgress>()
-        .add_event::<AimingStartedEvent>()
+        .add_event::<AimingEvent>()
+        .add_event::<AimingEndedEvent>()
         .add_plugins((
             DefaultPlugins,
             debug::DebugPlugin,
@@ -85,7 +90,15 @@ fn main() {
         ))
         .add_systems(Startup, (setup_graphics, setup_physics))
         .add_systems(PostUpdate, display_events)
-        .add_systems(Update, (my_cursor_system, player_input,arrow_display, velocity_changed))
+        .add_systems(
+            Update,
+            (
+                my_cursor_system,
+                player_input,
+                arrow_display,
+                velocity_changed,
+            ),
+        )
         .run();
 }
 fn my_cursor_system(
@@ -213,15 +226,17 @@ pub fn setup_physics(mut commands: Commands, asset_server: Res<AssetServer>) {
         })
         .insert(Name::new("Player"));
 
-    commands.spawn(SpriteBundle{
-        transform: Transform::from_xyz(0.0,260.0,0.0),
-        texture: asset_server.load("ornamented_arrow_alpha.png"),
-        sprite: Sprite{
-            anchor: Anchor::BottomCenter,
+    commands
+        .spawn(SpriteBundle {
+            transform: Transform::from_xyz(0.0, 260.0, 0.0).with_scale(Vec3::splat(0.0)),
+            texture: asset_server.load("ornamented_arrow_alpha.png"),
+            sprite: Sprite {
+                anchor: Anchor::BottomCenter,
+                ..default()
+            },
             ..default()
-        },
-            ..default()
-    }).insert(PointerArrow);
+        })
+        .insert(PointerArrow);
 }
 
 fn velocity_changed(query: Query<&Velocity, Changed<Velocity>>) {
@@ -236,17 +251,21 @@ fn player_input(
     buttons: Res<Input<MouseButton>>,
     mouse_pos: Res<MouseWorldPosition>,
     settings: Res<GameplaySettings>,
-    mut aim_event: EventWriter<AimingStartedEvent>,
+    mut aim_event: EventWriter<AimingEvent>,
+    mut aim_event_2: EventWriter<AimingEndedEvent>,
     mut ext_impulses: Query<(&mut ExternalImpulse, &Transform, &Velocity), With<PlayerControlled>>,
     mut progress: ResMut<GameplayProgress>,
 ) {
-    let relased = buttons.just_released(MouseButton::Left);
-    if buttons.pressed(MouseButton::Left) || relased {
+    let released = buttons.just_released(MouseButton::Left);
+    if buttons.pressed(MouseButton::Left) || released {
         let position = mouse_pos.0;
         let (mut external, transform, velocity) = ext_impulses.single_mut();
 
         if velocity.linvel.length() > 0.1 {
             eprintln!("Still moving({}), skipping", velocity.linvel);
+            if released {
+                aim_event_2.send(AimingEndedEvent { shoot: false });
+            }
             return;
         }
 
@@ -254,31 +273,42 @@ fn player_input(
         let distance = position.distance(player_pos);
         let strength = settings.get_shoot_strength(distance);
         if strength.is_none() {
+            if released {
+                aim_event_2.send(AimingEndedEvent { shoot: false });
+            }
             return;
         }
         let strength = strength.unwrap();
         let dir = (position - player_pos).normalize();
-        if !relased {
-            aim_event.send(AimingStartedEvent { player_pos, strength, direction: dir });
-        }else {
+        if released {
             eprintln!("{},{},{},{}", position, player_pos, dir, strength);
+            aim_event_2.send(AimingEndedEvent { shoot: true });
             external.impulse = dir * strength;
             external.torque_impulse = 0.3;
             progress.moves = progress.moves + 1;
+        } else {
+            aim_event.send(AimingEvent {
+                player_pos,
+                strength,
+                direction: dir,
+            });
         }
     }
 }
 
 fn arrow_display(
     mut arrow_q: Query<&mut Transform, With<PointerArrow>>,
-    mut aim_event: EventReader<AimingStartedEvent>,
+    mut aim_event: EventReader<AimingEvent>,
+    mut aim_event2: EventReader<AimingEndedEvent>,
     settings: Res<GameplaySettings>,
-){
+) {
+    let mut transform = arrow_q.single_mut();
     for ev in aim_event.iter() {
-        let mut transform = arrow_q.single_mut();
-        transform.translation = Vec3::new(ev.player_pos.x,ev.player_pos.y,0.0);
+        transform.translation = Vec3::new(ev.player_pos.x, ev.player_pos.y, 0.0);
         transform.scale = Vec3::splat(ev.strength / settings.max_force.y * 0.6);
-        transform.rotation = Quat::from_rotation_arc_2d(Vec2::new(0.0,1.0),ev.direction);
+        transform.rotation = Quat::from_rotation_arc_2d(Vec2::new(0.0, 1.0), ev.direction);
+    }
+    for ev in aim_event2.iter() {
+        transform.scale = Vec3::splat(0.0);
     }
 }
-
