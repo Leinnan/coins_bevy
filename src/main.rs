@@ -2,6 +2,7 @@ mod consts;
 mod debug;
 
 use bevy::prelude::*;
+use bevy::sprite::Anchor;
 use bevy::window::PrimaryWindow;
 use bevy_rapier2d::prelude::*;
 
@@ -20,6 +21,9 @@ struct MouseWorldPosition(Vec2);
 #[derive(Component)]
 struct MainCamera;
 
+#[derive(Component)]
+struct PointerArrow;
+
 #[derive(Resource, Reflect)]
 pub struct GameplaySettings {
     pub min_force: Vec2,
@@ -31,6 +35,14 @@ pub struct GameplayProgress {
     pub touches: i32,
     pub moves: i32,
 }
+
+#[derive(Event)]
+struct AimingStartedEvent {
+    pub player_pos : Vec2,
+    pub direction: Vec2,
+    pub strength: f32
+}
+
 
 impl GameplaySettings {
     pub fn get_shoot_strength(&self, distance: f32) -> Option<f32> {
@@ -64,6 +76,7 @@ fn main() {
         .init_resource::<MouseWorldPosition>()
         .init_resource::<GameplaySettings>()
         .init_resource::<GameplayProgress>()
+        .add_event::<AimingStartedEvent>()
         .add_plugins((
             DefaultPlugins,
             debug::DebugPlugin,
@@ -72,7 +85,7 @@ fn main() {
         ))
         .add_systems(Startup, (setup_graphics, setup_physics))
         .add_systems(PostUpdate, display_events)
-        .add_systems(Update, (my_cursor_system, player_input, velocity_changed))
+        .add_systems(Update, (my_cursor_system, player_input,arrow_display, velocity_changed))
         .run();
 }
 fn my_cursor_system(
@@ -199,11 +212,23 @@ pub fn setup_physics(mut commands: Commands, asset_server: Res<AssetServer>) {
             ..default()
         })
         .insert(Name::new("Player"));
+
+    commands.spawn(SpriteBundle{
+        transform: Transform::from_xyz(0.0,260.0,0.0),
+        texture: asset_server.load("ornamented_arrow_alpha.png"),
+        sprite: Sprite{
+            anchor: Anchor::BottomCenter,
+            ..default()
+        },
+            ..default()
+    }).insert(PointerArrow);
 }
 
 fn velocity_changed(query: Query<&Velocity, Changed<Velocity>>) {
     for velocity in &query {
-        eprintln!("{:?} velocity", velocity);
+        if velocity.linvel.length() > 0.1 {
+            eprintln!("{:?} velocity", velocity);
+        }
     }
 }
 
@@ -211,27 +236,49 @@ fn player_input(
     buttons: Res<Input<MouseButton>>,
     mouse_pos: Res<MouseWorldPosition>,
     settings: Res<GameplaySettings>,
+    mut aim_event: EventWriter<AimingStartedEvent>,
     mut ext_impulses: Query<(&mut ExternalImpulse, &Transform, &Velocity), With<PlayerControlled>>,
     mut progress: ResMut<GameplayProgress>,
 ) {
-    if buttons.just_pressed(MouseButton::Left) {
+    let relased = buttons.just_released(MouseButton::Left);
+    if buttons.pressed(MouseButton::Left) || relased {
         let position = mouse_pos.0;
         let (mut external, transform, velocity) = ext_impulses.single_mut();
+
         if velocity.linvel.length() > 0.1 {
             eprintln!("Still moving({}), skipping", velocity.linvel);
             return;
         }
-        let vec2 = Vec2::new(transform.translation.x, transform.translation.y);
-        let distance = position.distance(vec2);
+
+        let player_pos = Vec2::new(transform.translation.x, transform.translation.y);
+        let distance = position.distance(player_pos);
         let strength = settings.get_shoot_strength(distance);
         if strength.is_none() {
             return;
         }
         let strength = strength.unwrap();
-        let dir = (position - vec2).normalize();
-        eprintln!("{},{},{},{}", position, vec2, dir, strength);
-        external.impulse = dir * strength;
-        external.torque_impulse = 0.3;
-        progress.moves = progress.moves + 1;
+        let dir = (position - player_pos).normalize();
+        if !relased {
+            aim_event.send(AimingStartedEvent { player_pos, strength, direction: dir });
+        }else {
+            eprintln!("{},{},{},{}", position, player_pos, dir, strength);
+            external.impulse = dir * strength;
+            external.torque_impulse = 0.3;
+            progress.moves = progress.moves + 1;
+        }
     }
 }
+
+fn arrow_display(
+    mut arrow_q: Query<&mut Transform, With<PointerArrow>>,
+    mut aim_event: EventReader<AimingStartedEvent>,
+    settings: Res<GameplaySettings>,
+){
+    for ev in aim_event.iter() {
+        let mut transform = arrow_q.single_mut();
+        transform.translation = Vec3::new(ev.player_pos.x,ev.player_pos.y,0.0);
+        transform.scale = Vec3::splat(ev.strength / settings.max_force.y * 0.6);
+        transform.rotation = Quat::from_rotation_arc_2d(Vec2::new(0.0,1.0),ev.direction);
+    }
+}
+
