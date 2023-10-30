@@ -72,7 +72,7 @@ fn main() {
         ))
         .add_systems(Startup, (setup_graphics, setup_physics))
         .add_systems(PostUpdate, display_events)
-        .add_systems(Update, (my_cursor_system, player_input))
+        .add_systems(Update, (my_cursor_system, player_input, velocity_changed))
         .run();
 }
 fn my_cursor_system(
@@ -134,7 +134,10 @@ fn display_events(
                 CollisionEvent::Started(_, _, _) => progress.touches = progress.touches + 1,
                 CollisionEvent::Stopped(_, _, _) => {}
             }
-            text.sections[0].value = format!("Collisions: {}\nMoves: {}", progress.touches,progress.moves);
+            text.sections[0].value = format!(
+                "Collisions: {}\nMoves: {}",
+                progress.touches, progress.moves
+            );
         }
 
         for contact_force_event in contact_force_events.iter() {
@@ -198,6 +201,12 @@ pub fn setup_physics(mut commands: Commands, asset_server: Res<AssetServer>) {
         .insert(Name::new("Player"));
 }
 
+fn velocity_changed(query: Query<&Velocity, Changed<Velocity>>) {
+    for velocity in &query {
+        eprintln!("{:?} velocity", velocity);
+    }
+}
+
 fn player_input(
     buttons: Res<Input<MouseButton>>,
     mouse_pos: Res<MouseWorldPosition>,
@@ -216,7 +225,7 @@ fn player_input(
         let distance = position.distance(vec2);
         let strength = settings.get_shoot_strength(distance);
         if strength.is_none() {
-            return;;
+            return;
         }
         let strength = strength.unwrap();
         let dir = (position - vec2).normalize();
