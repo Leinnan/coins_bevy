@@ -71,6 +71,9 @@ fn player_input(
     mut ext_impulses: Query<(&mut ExternalImpulse, &Transform, &Velocity), With<PlayerControlled>>,
     mut progress: ResMut<GameplayProgress>,
 ) {
+    if ext_impulses.is_empty(){
+        return;
+    }
     let released = buttons.just_released(MouseButton::Left);
     if buttons.pressed(MouseButton::Left) || released {
         let position = mouse_pos.0;

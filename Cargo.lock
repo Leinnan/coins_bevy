@@ -442,6 +442,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "bevy_button_released_plugin"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0a2ff7187ff61b942fc012504e3ad4454dae029b20c048e96e068cc51d2fe44c"
+dependencies = [
+ "bevy",
+]
+
+[[package]]
 name = "bevy_core"
 version = "0.11.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1277,6 +1286,7 @@ version = "0.1.0"
 dependencies = [
  "bevy",
  "bevy-inspector-egui",
+ "bevy_button_released_plugin",
  "bevy_egui",
  "bevy_rapier2d",
  "console_error_panic_hook",
