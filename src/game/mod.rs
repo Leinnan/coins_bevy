@@ -3,11 +3,11 @@ pub mod components;
 use crate::consts;
 use crate::game::components::*;
 use crate::input::{AimingEndedEvent, AimingEvent, MainCamera};
+use crate::states::MainState;
 use bevy::prelude::*;
 use bevy::sprite::Anchor;
 use bevy_rapier2d::prelude::Sensor;
 use bevy_rapier2d::prelude::*;
-use crate::states::MainState;
 
 #[derive(Event)]
 pub struct GameProgressEvent;
@@ -23,8 +23,14 @@ impl Plugin for GamePlugin {
             .add_event::<GameProgressEvent>()
             .add_systems(OnEnter(MainState::Game), setup_physics)
             .add_systems(Startup, setup_graphics)
-            .add_systems(PostUpdate, (display_events).run_if(in_state(MainState::Game)))
-            .add_systems(Update, (arrow_display, velocity_changed, update_ui).run_if(in_state(MainState::Game)));
+            .add_systems(
+                PostUpdate,
+                (display_events).run_if(in_state(MainState::Game)),
+            )
+            .add_systems(
+                Update,
+                (arrow_display, velocity_changed, update_ui).run_if(in_state(MainState::Game)),
+            );
     }
 }
 fn setup_graphics(mut commands: Commands, _asset_server: Res<AssetServer>) {
@@ -41,13 +47,13 @@ pub fn setup_physics(mut commands: Commands, asset_server: Res<AssetServer>) {
                 color: consts::MY_ACCENT_COLOR,
             },
         )
-            .with_text_alignment(TextAlignment::Left)
-            .with_style(Style {
-                position_type: PositionType::Absolute,
-                top: Val::Px(15.0),
-                left: Val::Px(15.0),
-                ..default()
-            }),
+        .with_text_alignment(TextAlignment::Left)
+        .with_style(Style {
+            position_type: PositionType::Absolute,
+            top: Val::Px(15.0),
+            left: Val::Px(15.0),
+            ..default()
+        }),
         TextChanges,
     ));
     let candle_radius = 45.0;
@@ -116,7 +122,6 @@ pub fn setup_physics(mut commands: Commands, asset_server: Res<AssetServer>) {
             transform: Transform::from_xyz(0.0, 260.0, 0.0).with_scale(Vec3::splat(0.0)),
             texture: asset_server.load("ornamented_arrow_alpha.png"),
             sprite: Sprite {
-
                 anchor: Anchor::BottomCenter,
                 ..default()
             },
@@ -162,7 +167,7 @@ fn display_events(
 }
 
 fn update_ui(mut query: Query<&mut Text, With<TextChanges>>, progress: Res<GameplayProgress>) {
-    if query.is_empty(){
+    if query.is_empty() {
         return;
     }
     let mut text = query.single_mut();
@@ -194,7 +199,7 @@ fn arrow_display(
     mut aim_event2: EventReader<AimingEndedEvent>,
     settings: Res<GameplaySettings>,
 ) {
-    if arrow_q.is_empty(){
+    if arrow_q.is_empty() {
         return;
     }
     let mut transform = arrow_q.single_mut();

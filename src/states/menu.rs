@@ -19,7 +19,7 @@ impl Plugin for MenuPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(OnEnter(MainState::Menu), setup_menu)
             .add_systems(Update, (button_system).run_if(in_state(MainState::Menu)))
-        .add_systems(OnExit(MainState::Menu), cleanup_menu);
+            .add_systems(OnExit(MainState::Menu), cleanup_menu);
     }
 }
 
@@ -80,7 +80,8 @@ fn setup_menu(mut commands: Commands, asset_server: Res<AssetServer>) {
                         color: Color::hex("ECE3CE").unwrap(),
                     },
                 )
-                    .with_text_alignment(TextAlignment::Center).with_style(Style {
+                .with_text_alignment(TextAlignment::Center)
+                .with_style(Style {
                     margin: UiRect {
                         top: Val::Percent(5.0),
                         bottom: Val::Auto,
