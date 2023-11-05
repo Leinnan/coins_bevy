@@ -31,8 +31,6 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
         with:
           targets: wasm32-unknown-unknown
-      - name: Install alsa and udev
-        run: sudo apt-get install --no-install-recommends libasound2-dev libudev-dev
       - name: Install wasm bindgen
         uses: baptiste0928/cargo-install@v2
         with:
