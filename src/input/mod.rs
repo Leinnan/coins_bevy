@@ -80,7 +80,6 @@ fn player_input(
         let (mut external, transform, velocity) = ext_impulses.single_mut();
 
         if velocity.linvel.length() > 0.1 {
-            eprintln!("Still moving({}), skipping", velocity.linvel);
             if released {
                 aim_event_2.send(AimingEndedEvent { shoot: false });
             }

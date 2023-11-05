@@ -1,14 +1,12 @@
 use crate::consts;
 use crate::states::MainState;
 use bevy::prelude::*;
-use bevy_egui::egui::Align;
+
 use bevy_button_released_plugin::{ButtonReleasedEvent, GameButton};
 
 #[derive(Component)]
 pub enum MainMenuButton {
     StartGame,
-    EditProfile,
-    OpenRepository,
     Exit,
 }
 
@@ -35,12 +33,6 @@ fn button_system(
         if let Ok(button_type) = interaction_query.get(**event) {
             match *button_type {
                 MainMenuButton::StartGame => next_state.set(MainState::Game),
-                MainMenuButton::OpenRepository => {
-                    //
-                }
-                MainMenuButton::EditProfile => {
-                    //
-                    }
                 MainMenuButton::Exit => {
                     #[cfg(target_arch = "wasm32")]
                     {
@@ -80,7 +72,7 @@ fn setup_menu(mut commands: Commands, asset_server: Res<AssetServer>) {
         .insert(MenuRoot)
         .with_children(|parent| {
             parent.spawn(
-                (TextBundle::from_section(
+                TextBundle::from_section(
                     "Coins Game",
                     TextStyle {
                         font: asset_server.load(consts::BASE_FONT),
@@ -95,8 +87,7 @@ fn setup_menu(mut commands: Commands, asset_server: Res<AssetServer>) {
                         ..default()
                     },
                     ..default()
-                })
-                ),
+                }),
             );
 
             let btn_text_style = TextStyle {

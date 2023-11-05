@@ -27,7 +27,7 @@ impl Plugin for GamePlugin {
             .add_systems(Update, (arrow_display, velocity_changed, update_ui).run_if(in_state(MainState::Game)));
     }
 }
-fn setup_graphics(mut commands: Commands, asset_server: Res<AssetServer>) {
+fn setup_graphics(mut commands: Commands, _asset_server: Res<AssetServer>) {
     commands.spawn((Camera2dBundle::default(), MainCamera));
 }
 
