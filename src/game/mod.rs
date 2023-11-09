@@ -141,7 +141,7 @@ fn display_events(
     mut progress: ResMut<GameplayProgress>,
 ) {
     let mut should_send_event = false;
-    for collision_event in collision_events.iter() {
+    for collision_event in collision_events.read() {
         match collision_event {
             CollisionEvent::Started(e, e2, _) => {
                 let is_sensor = second_query.contains(*e) || second_query.contains(*e2);
@@ -203,12 +203,12 @@ fn arrow_display(
         return;
     }
     let mut transform = arrow_q.single_mut();
-    for ev in aim_event.iter() {
+    for ev in aim_event.read() {
         transform.translation = Vec3::new(ev.player_pos.x, ev.player_pos.y, 0.0);
         transform.scale = Vec3::splat(ev.strength / settings.max_force.y * 0.6);
         transform.rotation = Quat::from_rotation_arc_2d(Vec2::new(0.0, 1.0), ev.direction);
     }
-    for _ in aim_event2.iter() {
+    for _ in aim_event2.read() {
         transform.scale = Vec3::splat(0.0);
     }
 }

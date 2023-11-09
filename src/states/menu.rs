@@ -29,7 +29,7 @@ fn button_system(
     mut next_state: ResMut<NextState<MainState>>,
     #[cfg(not(target_arch = "wasm32"))] mut exit: EventWriter<bevy::app::AppExit>,
 ) {
-    for event in reader.iter() {
+    for event in reader.read() {
         if let Ok(button_type) = interaction_query.get(**event) {
             match *button_type {
                 MainMenuButton::StartGame => next_state.set(MainState::Game),
