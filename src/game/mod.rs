@@ -4,11 +4,11 @@ use crate::consts;
 use crate::game::components::*;
 use crate::input::{AimingEndedEvent, AimingEvent, MainCamera};
 use crate::states::MainState;
+use crate::utils::*;
 use bevy::prelude::*;
 use bevy::sprite::Anchor;
 use bevy_rapier2d::prelude::Sensor;
 use bevy_rapier2d::prelude::*;
-
 #[derive(Event)]
 pub struct GameProgressEvent;
 
@@ -22,6 +22,10 @@ impl Plugin for GamePlugin {
             .init_resource::<GameplayProgress>()
             .add_event::<GameProgressEvent>()
             .add_systems(OnEnter(MainState::Game), setup_physics)
+            .add_systems(
+                OnExit(MainState::Game),
+                despawn_recursive_by_component::<GameRootObject>,
+            )
             .add_systems(Startup, setup_graphics)
             .add_systems(
                 PostUpdate,
@@ -29,33 +33,43 @@ impl Plugin for GamePlugin {
             )
             .add_systems(
                 Update,
-                (arrow_display, velocity_changed, update_ui).run_if(in_state(MainState::Game)),
+                (
+                    arrow_display,
+                    velocity_changed,
+                    update_ui,
+                    exit_to_menu_on_escape,
+                )
+                    .run_if(in_state(MainState::Game)),
             );
     }
 }
+
 fn setup_graphics(mut commands: Commands, _asset_server: Res<AssetServer>) {
     commands.spawn((Camera2dBundle::default(), MainCamera));
 }
 
 pub fn setup_physics(mut commands: Commands, asset_server: Res<AssetServer>) {
-    commands.spawn((
-        TextBundle::from_section(
-            "Press LPM to move",
-            TextStyle {
-                font: asset_server.load(consts::BASE_FONT),
-                font_size: 15.0,
-                color: consts::MY_ACCENT_COLOR,
-            },
-        )
-        .with_text_alignment(TextAlignment::Left)
-        .with_style(Style {
-            position_type: PositionType::Absolute,
-            top: Val::Px(15.0),
-            left: Val::Px(15.0),
-            ..default()
-        }),
-        TextChanges,
-    ));
+    let root = commands.spawn(GameRootObject).id();
+    commands
+        .spawn((
+            TextBundle::from_section(
+                "Press LPM to move",
+                TextStyle {
+                    font: asset_server.load(consts::BASE_FONT),
+                    font_size: 15.0,
+                    color: consts::MY_ACCENT_COLOR,
+                },
+            )
+            .with_text_alignment(TextAlignment::Left)
+            .with_style(Style {
+                position_type: PositionType::Absolute,
+                top: Val::Px(15.0),
+                left: Val::Px(15.0),
+                ..default()
+            }),
+            TextChanges,
+        ))
+        .set_parent(root);
     let candle_radius = 45.0;
     let candle_handle = asset_server.load("candle.png");
 
@@ -71,11 +85,13 @@ pub fn setup_physics(mut commands: Commands, asset_server: Res<AssetServer>) {
                 },
                 ..default()
             })
+            .set_parent(root)
             .insert(Name::new(format!("Candle {}x{}", pos.x, pos.y)));
     }
     let end_circle_size = 80.0;
     commands
         .spawn((Collider::ball(end_circle_size - 50.0), Sensor))
+        .set_parent(root)
         .insert(SpriteBundle {
             transform: Transform::from_xyz(45.0, -190.0, 0.0),
             texture: asset_server.load("end_circle.png"),
@@ -94,6 +110,7 @@ pub fn setup_physics(mut commands: Commands, asset_server: Res<AssetServer>) {
             ActiveEvents::COLLISION_EVENTS,
             ContactForceEventThreshold(10.0),
         ))
+        .set_parent(root)
         .insert(Damping {
             linear_damping: 6.0,
             angular_damping: 9.0,
@@ -128,11 +145,14 @@ pub fn setup_physics(mut commands: Commands, asset_server: Res<AssetServer>) {
             },
             ..default()
         })
+        .set_parent(root)
         .insert(PointerArrow);
-    commands.spawn(AudioBundle {
-        source: asset_server.load("snd/spinning_tavern.ogg"),
-        ..default()
-    });
+    commands
+        .spawn(AudioBundle {
+            source: asset_server.load("snd/spinning_tavern.ogg"),
+            ..default()
+        })
+        .set_parent(root);
 }
 
 fn display_events(

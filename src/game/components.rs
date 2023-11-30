@@ -1,6 +1,9 @@
 use bevy::prelude::*;
 use bevy::prelude::{Component, Resource};
 
+#[derive(Component, Default, Copy, Clone)]
+pub struct GameRootObject;
+
 #[derive(Component)]
 pub struct TextChanges;
 

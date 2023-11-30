@@ -1,75 +1,57 @@
 use crate::consts::*;
-use crate::states::MainState;
-use bevy::app::{App, Plugin};
+use crate::{states::MainState, utils::exit_to_menu_on_escape};
 use bevy::prelude::*;
-use bevy_egui::{egui, EguiContext, EguiPlugin};
-use bevy_inspector_egui::{
-    bevy_inspector::hierarchy::SelectedEntities, DefaultInspectorConfigPlugin,
+use bevy::{
+    app::{Plugin, Update},
+    ecs::schedule::{common_conditions::in_state, IntoSystemConfigs},
 };
+use bevy_egui::{egui, EguiContext, EguiPlugin};
+use bevy_inspector_egui::bevy_inspector::hierarchy::SelectedEntities;
 
-pub struct DebugPlugin;
+#[derive(Component, Default, Copy, Clone)]
+pub struct EditorMapRoot;
 
-impl Plugin for DebugPlugin {
-    fn build(&self, app: &mut App) {
-        app.add_systems(Startup, git_info)
+#[derive(Component, Default, Copy, Clone)]
+pub struct PlayerSpawnPoint;
+
+#[derive(Component, Default, Copy, Clone)]
+pub struct EndPoint;
+
+pub struct MapEditorPlugin;
+
+impl Plugin for MapEditorPlugin {
+    fn build(&self, app: &mut bevy::prelude::App) {
+        app.add_systems(OnEnter(MainState::Editor), startup)
+            .add_systems(
+                OnExit(MainState::Editor),
+                crate::utils::despawn_recursive_by_component::<EditorMapRoot>,
+            )
             .add_systems(
                 Update,
-                inspector_ui.run_if(not(in_state(MainState::Editor))),
-            )
-            .add_plugins((EguiPlugin, DefaultInspectorConfigPlugin));
+                (inspector_ui, exit_to_menu_on_escape).run_if(in_state(MainState::Editor)),
+            );
     }
 }
 
-fn git_info(mut commands: Commands, asset_server: Res<AssetServer>) {
-    commands.spawn(
-        TextBundle::from_section(
-            format!("{} ( {} )", GIT_DATE, GIT_HASH),
-            TextStyle {
-                font: asset_server.load(BASE_FONT),
-                font_size: 11.0,
-                color: MY_ACCENT_COLOR,
-            },
-        )
-        .with_text_alignment(TextAlignment::Right)
-        .with_style(Style {
-            position_type: PositionType::Absolute,
-            bottom: Val::Px(5.0),
-            right: Val::Px(5.0),
-            ..default()
-        }),
-    );
+fn startup(mut commands: Commands) {
+    commands.spawn((EditorMapRoot, Name::new("MapEditor")));
 }
 
-fn inspector_ui(
-    world: &mut World,
-    mut selected_entities: Local<SelectedEntities>,
-    mut active: Local<bool>,
-) {
+fn inspector_ui(world: &mut World, mut selected_entities: Local<SelectedEntities>) {
     use bevy::window::PrimaryWindow;
-    if world
-        .get_resource::<Input<KeyCode>>()
-        .unwrap()
-        .just_released(KeyCode::F1)
-    {
-        *active = !*active;
-    }
     let mut egui_context = world
         .query_filtered::<&mut EguiContext, With<PrimaryWindow>>()
         .single(world)
         .clone();
-    if !*active {
-        return;
-    }
-    egui::SidePanel::left("hierarchy")
+    egui::SidePanel::left("Editor")
         .default_width(200.0)
         .show_animated(egui_context.get_mut(), true, |ui| {
             ui.add_space(10.0);
             ui.heading(
-                egui::RichText::new("Hierarchy")
+                egui::RichText::new("Map Editor")
                     .strong()
                     .color(MY_ACCENT_COLOR32),
             );
-            ui.label(egui::RichText::new("Press F1 to toggle UI").small());
             ui.add_space(15.0);
             egui::ScrollArea::vertical().show(ui, |ui| {
                 bevy_inspector_egui::bevy_inspector::hierarchy::hierarchy_ui(
@@ -77,12 +59,6 @@ fn inspector_ui(
                     ui,
                     &mut selected_entities,
                 );
-                ui.label(
-                    egui::RichText::new("Resources")
-                        .strong()
-                        .color(MY_ACCENT_COLOR32),
-                );
-                bevy_inspector_egui::bevy_inspector::ui_for_resources(world, ui);
 
                 ui.allocate_space(ui.available_size());
             });

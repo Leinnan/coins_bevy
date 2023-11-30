@@ -7,6 +7,7 @@ use bevy_button_released_plugin::{ButtonReleasedEvent, GameButton};
 #[derive(Component)]
 pub enum MainMenuButton {
     StartGame,
+    RunEditor,
     Exit,
 }
 
@@ -33,6 +34,7 @@ fn button_system(
         if let Ok(button_type) = interaction_query.get(**event) {
             match *button_type {
                 MainMenuButton::StartGame => next_state.set(MainState::Game),
+                MainMenuButton::RunEditor => next_state.set(MainState::Editor),
                 MainMenuButton::Exit => {
                     #[cfg(target_arch = "wasm32")]
                     {
@@ -103,6 +105,15 @@ fn setup_menu(mut commands: Commands, asset_server: Res<AssetServer>) {
                     MainMenuButton::StartGame,
                     UiRect {
                         top: Val::Auto,
+                        bottom: Val::Px(15.0),
+                        ..default()
+                    },
+                ),
+                #[cfg(not(target_arch = "wasm32"))]
+                (
+                    "Run Editor",
+                    MainMenuButton::RunEditor,
+                    UiRect {
                         bottom: Val::Px(15.0),
                         ..default()
                     },
