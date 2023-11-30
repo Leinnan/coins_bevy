@@ -58,6 +58,7 @@ pub fn setup_physics(mut commands: Commands, asset_server: Res<AssetServer>) {
     ));
     let candle_radius = 45.0;
     let candle_handle = asset_server.load("candle.png");
+
     for pos in [Vec2::new(0.0, -24.0), Vec2::new(100.0, -24.0)] {
         commands
             .spawn(Collider::ball(candle_radius))

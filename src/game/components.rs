@@ -12,12 +12,14 @@ pub struct PlayerControlled;
 pub struct PointerArrow;
 
 #[derive(Resource, Reflect)]
+#[reflect(Resource)]
 pub struct GameplaySettings {
     pub min_force: Vec2,
     pub max_force: Vec2,
 }
 
 #[derive(Resource, Reflect, Default)]
+#[reflect(Resource)]
 pub struct GameplayProgress {
     pub touches: i32,
     pub moves: i32,

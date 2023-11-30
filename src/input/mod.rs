@@ -18,6 +18,7 @@ pub struct AimingEndedEvent {
 
 /// We store the world position of the mouse cursor here.
 #[derive(Resource, Default, Reflect)]
+#[reflect(Resource)]
 pub struct MouseWorldPosition(Vec2);
 
 pub struct GameInputPlugin;
