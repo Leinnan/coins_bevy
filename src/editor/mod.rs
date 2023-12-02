@@ -1,4 +1,5 @@
 use crate::consts::*;
+use crate::input::MouseWorldPosition;
 use crate::{states::MainState, utils::exit_to_menu_on_escape};
 use bevy::prelude::*;
 use bevy::{
@@ -6,7 +7,6 @@ use bevy::{
     ecs::schedule::{common_conditions::in_state, IntoSystemConfigs},
 };
 use bevy_egui::{egui, EguiContext};
-use bevy_inspector_egui::bevy_inspector::hierarchy::SelectedEntities;
 
 #[derive(Component, Default, Copy, Clone)]
 pub struct EditorMapRoot;
@@ -15,7 +15,19 @@ pub struct EditorMapRoot;
 pub struct PlayerSpawnPoint;
 
 #[derive(Component, Default, Copy, Clone)]
-pub struct EndPoint;
+pub struct EndPoint
+{
+    pub radius: f32,
+}
+
+#[derive(Component, Default, Copy, Clone)]
+pub enum ActionToDo{
+    SetPlayerSpawnPoint(Vec2),
+    SetEndPoint(Vec2),
+    AddObstacleToMap(Vec2),
+    #[default]
+    DoNothing,
+}
 
 pub struct MapEditorPlugin;
 
@@ -28,24 +40,36 @@ impl Plugin for MapEditorPlugin {
             )
             .add_systems(
                 Update,
-                (inspector_ui, exit_to_menu_on_escape).run_if(in_state(MainState::Editor)),
+                (inspector_ui, exit_to_menu_on_escape,draw_objects).run_if(in_state(MainState::Editor)),
             );
     }
 }
 
 fn startup(mut commands: Commands) {
-    commands.spawn((EditorMapRoot, Name::new("MapEditor")));
+    commands.spawn((EditorMapRoot, Name::new("MapEditor"),TransformBundle::default()));
 }
 
-fn inspector_ui(world: &mut World, mut selected_entities: Local<SelectedEntities>) {
+fn draw_objects(mut gizmos: Gizmos, q: Query<&GlobalTransform, With<PlayerSpawnPoint>>,q2: Query<(&GlobalTransform,&EndPoint), With<EndPoint>>) {
+    for t in q.iter() {
+        let t = t.translation();
+        gizmos.circle_2d(Vec2::new(t.x, t.y), 10., MY_ACCENT_COLOR);
+    }    
+    for (t,end_point) in q2.iter() {
+        let t = t.translation();
+        gizmos.circle_2d(Vec2::new(t.x, t.y), end_point.radius, MY_ACCENT_COLOR);
+    }
+}
+
+fn inspector_ui(world: &mut World, mut enum_val : Local<ActionToDo>) {
     use bevy::window::PrimaryWindow;
     let mut egui_context = world
         .query_filtered::<&mut EguiContext, With<PrimaryWindow>>()
         .single(world)
         .clone();
-    egui::SidePanel::left("Editor")
-        .default_width(200.0)
-        .show_animated(egui_context.get_mut(), true, |ui| {
+    let world_pos = **world.get_resource::<MouseWorldPosition>().unwrap_or(&MouseWorldPosition::default());
+    egui::TopBottomPanel::bottom("LevelEditor")
+        .default_height(300.0)
+        .show(egui_context.get_mut(), |ui| {
             ui.add_space(10.0);
             ui.heading(
                 egui::RichText::new("Map Editor")
@@ -53,44 +77,13 @@ fn inspector_ui(world: &mut World, mut selected_entities: Local<SelectedEntities
                     .color(MY_ACCENT_COLOR32),
             );
             ui.add_space(15.0);
-            egui::ScrollArea::vertical().show(ui, |ui| {
-                bevy_inspector_egui::bevy_inspector::hierarchy::hierarchy_ui(
-                    world,
-                    ui,
-                    &mut selected_entities,
-                );
-
-                ui.allocate_space(ui.available_size());
-            });
+            let ui_over = ui.ui_contains_pointer();
+            // ui.horizontal(|ui| {
+            //     ui.radio_value(&mut enum_val, ActionToDo::DoNothing, "First");
+            //     ui.radio_value(&mut enum_val, ActionToDo::SetPlayerSpawnPoint(world_pos), "Second");
+            //     ui.radio_value(&mut enum_val, ActionToDo::DoNothing, "Third");
+            // });
+            ui.label(format!("Mouse pos: {:.2}x{:.2}: {}",world_pos.x,world_pos.y,ui_over));
         });
 
-    egui::SidePanel::right("inspector")
-        .default_width(250.0)
-        .show(egui_context.get_mut(), |ui| {
-            ui.add_space(10.0);
-            ui.heading(
-                egui::RichText::new("Inspector")
-                    .heading()
-                    .strong()
-                    .color(MY_ACCENT_COLOR32),
-            );
-            ui.label(
-                egui::RichText::new(format!("{} ( {} )", GIT_DATE, GIT_HASH)).small(), // .weak(),
-            );
-            ui.add_space(15.0);
-            egui::ScrollArea::vertical().show(ui, |ui| {
-                match selected_entities.as_slice() {
-                    &[entity] => {
-                        bevy_inspector_egui::bevy_inspector::ui_for_entity(world, entity, ui);
-                    }
-                    entities => {
-                        bevy_inspector_egui::bevy_inspector::ui_for_entities_shared_components(
-                            world, entities, ui,
-                        );
-                    }
-                }
-
-                ui.allocate_space(ui.available_size());
-            });
-        });
 }

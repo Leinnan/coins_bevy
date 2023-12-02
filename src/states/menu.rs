@@ -78,7 +78,7 @@ fn setup_menu(mut commands: Commands, asset_server: Res<AssetServer>) {
                     "Coins Game",
                     TextStyle {
                         font: asset_server.load(consts::BASE_FONT),
-                        font_size: 45.0,
+                        font_size: 55.0,
                         color: Color::hex("ECE3CE").unwrap(),
                     },
                 )
