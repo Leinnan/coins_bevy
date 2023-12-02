@@ -21,7 +21,7 @@ impl Plugin for GamePlugin {
             .init_resource::<GameplaySettings>()
             .init_resource::<GameplayProgress>()
             .add_event::<GameProgressEvent>()
-            .add_systems(OnEnter(MainState::Game), setup_physics)
+            .add_systems(OnEnter(MainState::Game), (setup_physics,reset_progress))
             .add_systems(
                 OnExit(MainState::Game),
                 despawn_recursive_by_component::<GameRootObject>,
@@ -44,19 +44,25 @@ impl Plugin for GamePlugin {
     }
 }
 
+fn reset_progress(
+    mut progress: ResMut<GameplayProgress>)
+    {
+        progress.reset();
+    }
+
 fn setup_graphics(mut commands: Commands, _asset_server: Res<AssetServer>) {
     commands.spawn((Camera2dBundle::default(), MainCamera));
 }
 
 pub fn setup_physics(mut commands: Commands, asset_server: Res<AssetServer>) {
-    let root = commands.spawn(GameRootObject).id();
+    let root = commands.spawn((GameRootObject,TransformBundle::default(),VisibilityBundle::default())).id();
     commands
-        .spawn((
+        .spawn((GameRootObject,
             TextBundle::from_section(
                 "Press LPM to move",
                 TextStyle {
                     font: asset_server.load(consts::BASE_FONT),
-                    font_size: 15.0,
+                    font_size: 25.0,
                     color: consts::MY_ACCENT_COLOR,
                 },
             )
@@ -68,8 +74,7 @@ pub fn setup_physics(mut commands: Commands, asset_server: Res<AssetServer>) {
                 ..default()
             }),
             TextChanges,
-        ))
-        .set_parent(root);
+        ));
     let candle_radius = 45.0;
     let candle_handle = asset_server.load("candle.png");
 

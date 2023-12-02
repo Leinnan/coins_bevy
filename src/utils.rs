@@ -6,8 +6,9 @@ pub fn despawn_recursive_by_component<T: bevy::prelude::Component>(
     q: Query<Entity, With<T>>,
     mut commands: Commands,
 ) {
-    let e = q.single();
+    for e in q.iter() {
     commands.entity(e).despawn_recursive();
+    }
 }
 pub fn exit_to_menu_on_escape(
     input: Res<Input<KeyCode>>,

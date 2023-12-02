@@ -29,6 +29,14 @@ pub struct GameplayProgress {
     pub is_inside_end_place: bool,
 }
 
+impl GameplayProgress {
+    pub fn reset(&mut self) {
+        self.touches = 0;
+        self.moves = 0;
+        self.is_inside_end_place = false;
+    }
+}
+
 impl GameplaySettings {
     pub fn get_shoot_strength(&self, distance: f32) -> Option<f32> {
         if distance < self.min_force.x {

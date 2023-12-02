@@ -5,7 +5,7 @@ use bevy::{
     app::{Plugin, Update},
     ecs::schedule::{common_conditions::in_state, IntoSystemConfigs},
 };
-use bevy_egui::{egui, EguiContext, EguiPlugin};
+use bevy_egui::{egui, EguiContext};
 use bevy_inspector_egui::bevy_inspector::hierarchy::SelectedEntities;
 
 #[derive(Component, Default, Copy, Clone)]
