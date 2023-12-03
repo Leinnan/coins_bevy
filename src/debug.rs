@@ -1,6 +1,5 @@
 use crate::consts::*;
 use bevy::app::{App, Plugin};
-use bevy::input::common_conditions::input_toggle_active;
 use bevy::prelude::*;
 use bevy_egui::{egui, EguiContext, EguiPlugin};
 use bevy_inspector_egui::{
@@ -14,7 +13,7 @@ impl Plugin for DebugPlugin {
         app.add_systems(Startup, git_info)
             .add_systems(
                 Update,
-                inspector_ui.run_if(input_toggle_active(false, KeyCode::F1)),
+                inspector_ui, //.run_if(not(in_state(crate::states::MainState::Editor))),
             )
             .add_plugins((EguiPlugin, DefaultInspectorConfigPlugin));
     }
@@ -40,12 +39,26 @@ fn git_info(mut commands: Commands, asset_server: Res<AssetServer>) {
     );
 }
 
-fn inspector_ui(world: &mut World, mut selected_entities: Local<SelectedEntities>) {
+fn inspector_ui(
+    world: &mut World,
+    mut selected_entities: Local<SelectedEntities>,
+    mut active: Local<bool>,
+) {
     use bevy::window::PrimaryWindow;
+    if world
+        .get_resource::<Input<KeyCode>>()
+        .unwrap()
+        .just_released(KeyCode::F1)
+    {
+        *active = !*active;
+    }
     let mut egui_context = world
         .query_filtered::<&mut EguiContext, With<PrimaryWindow>>()
         .single(world)
         .clone();
+    if !*active {
+        return;
+    }
     egui::SidePanel::left("hierarchy")
         .default_width(200.0)
         .show_animated(egui_context.get_mut(), true, |ui| {

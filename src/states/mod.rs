@@ -8,6 +8,7 @@ use bevy_button_released_plugin::*;
 pub enum MainState {
     #[default]
     Menu,
+    Editor,
     Game,
 }
 

@@ -1,6 +1,10 @@
 use bevy::prelude::*;
 use bevy::prelude::{Component, Resource};
 
+#[derive(Debug, Reflect, Component, Default, Clone)]
+#[reflect(Component)]
+pub struct GameRootObject;
+
 #[derive(Component)]
 pub struct TextChanges;
 
@@ -24,6 +28,30 @@ pub struct GameplayProgress {
     pub touches: i32,
     pub moves: i32,
     pub is_inside_end_place: bool,
+}
+
+#[derive(Debug, Reflect, Component, Default, Clone)]
+#[reflect(Component)]
+pub struct PlayerSpawnPoint;
+
+#[derive(Debug, Reflect, Component, Default, Clone)]
+#[reflect(Component)]
+pub struct EndPoint {
+    pub radius: f32,
+}
+
+#[derive(Debug, Reflect, Component, Default, Clone)]
+#[reflect(Component)]
+pub struct Obstacle {
+    pub radius: f32,
+}
+
+impl GameplayProgress {
+    pub fn reset(&mut self) {
+        self.touches = 0;
+        self.moves = 0;
+        self.is_inside_end_place = false;
+    }
 }
 
 impl GameplaySettings {

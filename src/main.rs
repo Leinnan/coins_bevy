@@ -1,14 +1,17 @@
 mod consts;
 mod debug;
+mod editor;
 mod game;
 mod input;
 mod states;
+pub mod utils;
 
 use crate::game::GamePlugin;
 use crate::input::GameInputPlugin;
 use crate::states::GameStatesPlugin;
 use bevy::prelude::*;
 use bevy_rapier2d::prelude::*;
+use editor::MapEditorPlugin;
 
 fn main() {
     App::new()
@@ -22,6 +25,7 @@ fn main() {
             GameInputPlugin,
             GamePlugin,
             GameStatesPlugin,
+            MapEditorPlugin,
         ))
         .run();
 }
