@@ -3,11 +3,10 @@
   entities: {
     0: (
       components: {
-        "coins_bevy::game::components::GameRootObject": (),
         "bevy_transform::components::transform::Transform": (
           translation: (
-            x: 0.0,
-            y: 0.0,
+            x: -372.0,
+            y: 55.0,
             z: 0.0,
           ),
           rotation: (
@@ -22,46 +21,17 @@
             z: 1.0,
           ),
         ),
-        "bevy_transform::components::global_transform::GlobalTransform": ((
-          matrix3: (
-            x_axis: (
-              x: 1.0,
-              y: 0.0,
-              z: 0.0,
-            ),
-            y_axis: (
-              x: 0.0,
-              y: 1.0,
-              z: 0.0,
-            ),
-            z_axis: (
-              x: 0.0,
-              y: 0.0,
-              z: 1.0,
-            ),
-          ),
-          translation: (
-            x: 0.0,
-            y: 0.0,
-            z: 0.0,
-          ),
-        )),
-        "bevy_hierarchy::components::children::Children": ([
-          1,
-          2,
-          3,
-          4,
-          5,
-          6,
-        ]),
+        "coins_bevy::game::components::Obstacle": (
+          radius: 45.0,
+        ),
       },
     ),
     1: (
       components: {
         "bevy_transform::components::transform::Transform": (
           translation: (
-            x: -366.0,
-            y: 262.99997,
+            x: -100.0,
+            y: 215.99998,
             z: 0.0,
           ),
           rotation: (
@@ -76,16 +46,17 @@
             z: 1.0,
           ),
         ),
-        "bevy_hierarchy::components::parent::Parent": (0),
-        "coins_bevy::game::components::PlayerSpawnPoint": (),
+        "coins_bevy::game::components::Obstacle": (
+          radius: 45.0,
+        ),
       },
     ),
     2: (
       components: {
         "bevy_transform::components::transform::Transform": (
           translation: (
-            x: -249.00002,
-            y: -8.99999,
+            x: -124.000015,
+            y: 37.99999,
             z: 0.0,
           ),
           rotation: (
@@ -100,7 +71,6 @@
             z: 1.0,
           ),
         ),
-        "bevy_hierarchy::components::parent::Parent": (0),
         "coins_bevy::game::components::Obstacle": (
           radius: 45.0,
         ),
@@ -110,8 +80,8 @@
       components: {
         "bevy_transform::components::transform::Transform": (
           translation: (
-            x: -67.99999,
-            y: 108.999985,
+            x: 50.999985,
+            y: 72.999985,
             z: 0.0,
           ),
           rotation: (
@@ -126,9 +96,8 @@
             z: 1.0,
           ),
         ),
-        "bevy_hierarchy::components::parent::Parent": (0),
-        "coins_bevy::game::components::Obstacle": (
-          radius: 45.0,
+        "coins_bevy::game::components::EndPoint": (
+          radius: 80.0,
         ),
       },
     ),
@@ -136,8 +105,8 @@
       components: {
         "bevy_transform::components::transform::Transform": (
           translation: (
-            x: -92.00001,
-            y: -69.999985,
+            x: -489.0,
+            y: 197.99997,
             z: 0.0,
           ),
           rotation: (
@@ -152,62 +121,7 @@
             z: 1.0,
           ),
         ),
-        "bevy_hierarchy::components::parent::Parent": (0),
-        "coins_bevy::game::components::Obstacle": (
-          radius: 45.0,
-        ),
-      },
-    ),
-    5: (
-      components: {
-        "bevy_transform::components::transform::Transform": (
-          translation: (
-            x: -92.00001,
-            y: -69.999985,
-            z: 0.0,
-          ),
-          rotation: (
-            x: 0.0,
-            y: 0.0,
-            z: 0.0,
-            w: 1.0,
-          ),
-          scale: (
-            x: 1.0,
-            y: 1.0,
-            z: 1.0,
-          ),
-        ),
-        "bevy_hierarchy::components::parent::Parent": (0),
-        "coins_bevy::game::components::Obstacle": (
-          radius: 45.0,
-        ),
-      },
-    ),
-    6: (
-      components: {
-        "bevy_transform::components::transform::Transform": (
-          translation: (
-            x: 88.00003,
-            y: -79.999985,
-            z: 0.0,
-          ),
-          rotation: (
-            x: 0.0,
-            y: 0.0,
-            z: 0.0,
-            w: 1.0,
-          ),
-          scale: (
-            x: 1.0,
-            y: 1.0,
-            z: 1.0,
-          ),
-        ),
-        "bevy_hierarchy::components::parent::Parent": (0),
-        "coins_bevy::game::components::EndPoint": (
-          radius: 80.0,
-        ),
+        "coins_bevy::game::components::PlayerSpawnPoint": (),
       },
     ),
   },

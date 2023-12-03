@@ -1,5 +1,4 @@
 use crate::consts::*;
-use crate::states::MainState;
 use bevy::app::{App, Plugin};
 use bevy::prelude::*;
 use bevy_egui::{egui, EguiContext, EguiPlugin};
@@ -14,7 +13,7 @@ impl Plugin for DebugPlugin {
         app.add_systems(Startup, git_info)
             .add_systems(
                 Update,
-                inspector_ui.run_if(not(in_state(MainState::Editor))),
+                inspector_ui//.run_if(not(in_state(crate::states::MainState::Editor))),
             )
             .add_plugins((EguiPlugin, DefaultInspectorConfigPlugin));
     }
