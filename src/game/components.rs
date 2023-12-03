@@ -29,6 +29,22 @@ pub struct GameplayProgress {
     pub is_inside_end_place: bool,
 }
 
+#[derive(Debug, Reflect, Component, Default, Clone)]
+#[reflect(Component)]
+pub struct PlayerSpawnPoint;
+
+#[derive(Debug, Reflect, Component, Default, Clone)]
+#[reflect(Component)]
+pub struct EndPoint {
+    pub radius: f32,
+}
+
+#[derive(Debug, Reflect, Component, Default, Clone)]
+#[reflect(Component)]
+pub struct Obstacle {
+    pub radius: f32,
+}
+
 impl GameplayProgress {
     pub fn reset(&mut self) {
         self.touches = 0;

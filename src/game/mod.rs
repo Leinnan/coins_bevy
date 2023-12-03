@@ -20,8 +20,11 @@ impl Plugin for GamePlugin {
             .register_type::<GameplayProgress>()
             .init_resource::<GameplaySettings>()
             .init_resource::<GameplayProgress>()
+            .register_type::<PlayerSpawnPoint>()
+            .register_type::<EndPoint>()
+            .register_type::<Obstacle>()
             .add_event::<GameProgressEvent>()
-            .add_systems(OnEnter(MainState::Game), (setup_physics,reset_progress))
+            .add_systems(OnEnter(MainState::Game), (setup_world, reset_progress))
             .add_systems(
                 OnExit(MainState::Game),
                 despawn_recursive_by_component::<GameRootObject>,
@@ -34,6 +37,7 @@ impl Plugin for GamePlugin {
             .add_systems(
                 Update,
                 (
+                    add_elements,
                     arrow_display,
                     velocity_changed,
                     update_ui,
@@ -44,101 +48,152 @@ impl Plugin for GamePlugin {
     }
 }
 
-fn reset_progress(
-    mut progress: ResMut<GameplayProgress>)
-    {
-        progress.reset();
+fn add_elements(
+    mut commands: Commands,
+    asset_server: Res<AssetServer>,
+    obstacles: Query<(Entity, &Transform, &Obstacle), Added<Obstacle>>,
+    end_points: Query<(Entity, &Transform, &EndPoint), Added<EndPoint>>,
+    start_point: Query<(Entity, &Transform), Added<PlayerSpawnPoint>>,
+) {
+    let candle_handle = asset_server.load("candle.png");
+    for (e, transform, obstacle) in obstacles.iter() {
+        commands
+            .entity(e)
+            .insert(Collider::ball(obstacle.radius))
+            .insert(SpriteBundle {
+                transform: *transform,
+                texture: candle_handle.clone(),
+                sprite: Sprite {
+                    custom_size: Some(Vec2::splat(obstacle.radius * 2.0)),
+                    ..default()
+                },
+                ..default()
+            })
+            .insert(Name::new("Candle".to_string()));
     }
+
+    for (e, transform, end_point) in end_points.iter() {
+        commands
+            .entity(e)
+            .insert((Collider::ball(end_point.radius - 50.0), Sensor))
+            .insert(SpriteBundle {
+                transform: *transform,
+                texture: asset_server.load("end_circle.png"),
+                sprite: Sprite {
+                    custom_size: Some(Vec2::splat(end_point.radius * 2.0)),
+                    ..default()
+                },
+                ..default()
+            })
+            .insert(Name::new("Finish point"));
+    }
+
+    let radius = 20.0;
+    for (e, transform) in start_point.iter() {
+        commands
+            .entity(e)
+            .insert((
+                RigidBody::Dynamic,
+                Collider::ball(radius),
+                ActiveEvents::COLLISION_EVENTS,
+                ContactForceEventThreshold(10.0),
+            ))
+            .insert(Damping {
+                linear_damping: 6.0,
+                angular_damping: 9.0,
+            })
+            .insert(ZIndex::Global(2))
+            .insert(PlayerControlled)
+            .insert(GravityScale(0.0))
+            .insert(Velocity::zero())
+            .insert(ExternalImpulse {
+                impulse: Vec2::new(0.0, 0.0),
+                torque_impulse: 0.0,
+            })
+            .insert(Restitution::coefficient(0.95))
+            .insert(SpriteBundle {
+                transform: *transform,
+                texture: asset_server.load("coin.png"),
+                sprite: Sprite {
+                    custom_size: Some(Vec2::splat(radius * 2.0)),
+                    ..default()
+                },
+                ..default()
+            })
+            .insert(Name::new("Player"));
+    }
+}
+
+fn reset_progress(mut progress: ResMut<GameplayProgress>) {
+    progress.reset();
+}
 
 fn setup_graphics(mut commands: Commands, _asset_server: Res<AssetServer>) {
     commands.spawn((Camera2dBundle::default(), MainCamera));
 }
 
-pub fn setup_physics(mut commands: Commands, asset_server: Res<AssetServer>) {
-    let root = commands.spawn((GameRootObject,TransformBundle::default(),VisibilityBundle::default())).id();
-    commands
-        .spawn((GameRootObject,
-            TextBundle::from_section(
-                "Press LPM to move",
-                TextStyle {
-                    font: asset_server.load(consts::BASE_FONT),
-                    font_size: 25.0,
-                    color: consts::MY_ACCENT_COLOR,
-                },
-            )
-            .with_text_alignment(TextAlignment::Left)
-            .with_style(Style {
-                position_type: PositionType::Absolute,
-                top: Val::Px(15.0),
-                left: Val::Px(15.0),
-                ..default()
-            }),
-            TextChanges,
-        ));
-    let candle_radius = 45.0;
-    let candle_handle = asset_server.load("candle.png");
+pub fn setup_world(mut commands: Commands, asset_server: Res<AssetServer>) {
+    let root = commands
+        .spawn((
+            GameRootObject,
+            TransformBundle::default(),
+            VisibilityBundle::default(),
+        ))
+        .id();
+    commands.spawn((
+        GameRootObject,
+        TextBundle::from_section(
+            "Press LPM to move",
+            TextStyle {
+                font: asset_server.load(consts::BASE_FONT),
+                font_size: 25.0,
+                color: consts::MY_ACCENT_COLOR,
+            },
+        )
+        .with_text_alignment(TextAlignment::Left)
+        .with_style(Style {
+            position_type: PositionType::Absolute,
+            top: Val::Px(15.0),
+            left: Val::Px(15.0),
+            ..default()
+        }),
+        TextChanges,
+    ));
 
+    let candle_radius = 45.0;
     for pos in [Vec2::new(0.0, -24.0), Vec2::new(100.0, -24.0)] {
         commands
-            .spawn(Collider::ball(candle_radius))
-            .insert(SpriteBundle {
-                transform: Transform::from_xyz(pos.x, pos.y, 0.0),
-                texture: candle_handle.clone(),
-                sprite: Sprite {
-                    custom_size: Some(Vec2::splat(candle_radius * 2.0)),
-                    ..default()
-                },
-                ..default()
+            .spawn(TransformBundle {
+                local: Transform::from_xyz(pos.x, pos.y, 0.0),
+                ..Default::default()
             })
-            .set_parent(root)
-            .insert(Name::new(format!("Candle {}x{}", pos.x, pos.y)));
+            .insert(Obstacle {
+                radius: candle_radius,
+            })
+            .set_parent(root);
     }
     let end_circle_size = 80.0;
     commands
-        .spawn((Collider::ball(end_circle_size - 50.0), Sensor))
-        .set_parent(root)
-        .insert(SpriteBundle {
-            transform: Transform::from_xyz(45.0, -190.0, 0.0),
-            texture: asset_server.load("end_circle.png"),
-            sprite: Sprite {
-                custom_size: Some(Vec2::splat(end_circle_size * 2.0)),
+        .spawn((
+            TransformBundle {
+                local: Transform::from_xyz(45.0, -190.0, 0.0),
                 ..default()
             },
-            ..default()
-        })
-        .insert(Name::new("Finish point"));
-    let radius = 20.0;
+            EndPoint {
+                radius: end_circle_size,
+            },
+        ))
+        .set_parent(root);
+
     commands
         .spawn((
-            RigidBody::Dynamic,
-            Collider::ball(radius),
-            ActiveEvents::COLLISION_EVENTS,
-            ContactForceEventThreshold(10.0),
-        ))
-        .set_parent(root)
-        .insert(Damping {
-            linear_damping: 6.0,
-            angular_damping: 9.0,
-        })
-        .insert(ZIndex::Global(2))
-        .insert(PlayerControlled)
-        .insert(GravityScale(0.0))
-        .insert(Velocity::zero())
-        .insert(ExternalImpulse {
-            impulse: Vec2::new(0.0, 0.0),
-            torque_impulse: 0.0,
-        })
-        .insert(Restitution::coefficient(0.95))
-        .insert(SpriteBundle {
-            transform: Transform::from_xyz(0.0, 260.0, 0.0),
-            texture: asset_server.load("coin.png"),
-            sprite: Sprite {
-                custom_size: Some(Vec2::splat(radius * 2.0)),
+            TransformBundle {
+                local: Transform::from_xyz(0.0, 260.0, 0.0),
                 ..default()
             },
-            ..default()
-        })
-        .insert(Name::new("Player"));
+            PlayerSpawnPoint,
+        ))
+        .set_parent(root);
 
     commands
         .spawn(SpriteBundle {
