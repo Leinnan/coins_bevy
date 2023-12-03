@@ -1,7 +1,8 @@
 use bevy::prelude::*;
 use bevy::prelude::{Component, Resource};
 
-#[derive(Component, Default, Copy, Clone)]
+#[derive(Debug, Reflect, Component, Default, Clone)]
+#[reflect(Component)]
 pub struct GameRootObject;
 
 #[derive(Component)]

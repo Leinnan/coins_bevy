@@ -1,13 +1,15 @@
 use crate::consts::*;
-use crate::game::components::{EndPoint, Obstacle, PlayerSpawnPoint};
+use crate::game::components::{EndPoint, Obstacle, PlayerSpawnPoint, GameRootObject};
 use crate::input::MouseWorldPosition;
 use crate::{states::MainState, utils::exit_to_menu_on_escape};
 use bevy::prelude::*;
 use bevy::{
     app::{Plugin, Update},
     ecs::schedule::common_conditions::in_state,
+    tasks::IoTaskPool
 };
 use bevy_egui::{egui, EguiContext};
+use std::{fs::File, io::Write};
 
 #[derive(Component, Default, Copy, Clone)]
 pub struct EditorMapRoot;
@@ -109,6 +111,9 @@ fn inspector_ui(world: &mut World, mut enum_val: Local<ActionToDo>, mut ui_over:
                 "Mouse pos: {:.2}x{:.2}: {}",
                 world_pos.x, world_pos.y, *ui_over
             ));
+            if ui.button("Save map").clicked() {
+                save_map(world, "01.scn.ron".into());
+            }
             *ui_over = ui.ui_contains_pointer();
             if world
                 .get_resource::<Input<MouseButton>>()
@@ -122,14 +127,22 @@ fn inspector_ui(world: &mut World, mut enum_val: Local<ActionToDo>, mut ui_over:
                 };
                 match *enum_val {
                     ActionToDo::SetPlayerSpawnPoint => {
-                        world
-                            .spawn((transform, PlayerSpawnPoint, EditorObject))
-                            .set_parent(world_root);
+                        if let Some(e) = get_closest_object_with_type::<PlayerSpawnPoint>(world) {
+                            world.entity_mut(e).insert(transform);
+                        }else {
+                            world
+                                .spawn((transform, PlayerSpawnPoint, EditorObject))
+                                .set_parent(world_root);
+                        }
                     }
                     ActionToDo::SetEndPoint => {
-                        world
-                            .spawn((transform, EndPoint { radius: 80.0 }, EditorObject))
-                            .set_parent(world_root);
+                        if let Some(e) = get_closest_object_with_type::<EndPoint>(world) {
+                            world.entity_mut(e).insert(transform);
+                        }else {
+                            world
+                                .spawn((transform, EndPoint { radius: 80.0 }, EditorObject))
+                                .set_parent(world_root);
+                        }
                     }
                     ActionToDo::AddObstacleToMap => {
                         world
@@ -137,16 +150,14 @@ fn inspector_ui(world: &mut World, mut enum_val: Local<ActionToDo>, mut ui_over:
                             .set_parent(world_root);
                     }
                     ActionToDo::MoveObject => {
-                        let e = get_closest_object_with_type::<EditorObject>(world)
-                            .unwrap()
-                            .0;
-                        world.entity_mut(e).insert(transform);
+                        if let Some(e) = get_closest_object_with_type::<EditorObject>(world) {
+                            world.entity_mut(e).insert(transform);
+                        }
                     }
                     ActionToDo::RemoveObject => {
-                        let e = get_closest_object_with_type::<EditorObject>(world)
-                            .unwrap()
-                            .0;
-                        world.entity_mut(e).despawn_recursive();
+                        if let Some(e) = get_closest_object_with_type::<EditorObject>(world) {
+                            world.entity_mut(e).despawn_recursive();
+                        }
                     }
                     ActionToDo::DoNothing => {}
                 }
@@ -156,7 +167,7 @@ fn inspector_ui(world: &mut World, mut enum_val: Local<ActionToDo>, mut ui_over:
 
 pub fn get_closest_object_with_type<T: bevy::prelude::Component>(
     world: &mut World,
-) -> Option<(Entity, &Transform)> {
+) -> Option<Entity> {
     let world_pos = **world
         .get_resource::<MouseWorldPosition>()
         .unwrap_or(&MouseWorldPosition::default());
@@ -165,11 +176,54 @@ pub fn get_closest_object_with_type<T: bevy::prelude::Component>(
         .query_filtered::<(Entity, &Transform), With<T>>()
         .iter(world)
         .collect();
+    if objects.is_empty() {
+        return None;
+    }
     objects.sort_by(|a, b| {
         a.1.translation
             .distance(mouse_pos)
             .partial_cmp(&b.1.translation.distance(mouse_pos))
             .unwrap()
     });
-    objects.first().copied()
+
+    Some(objects.first().unwrap().0)
+}
+
+
+pub fn save_map(world: &mut World, filename: String) {
+    let mut scene_world = World::new();
+    let type_registry = world.resource::<AppTypeRegistry>().clone();
+    scene_world.insert_resource(type_registry);
+    let root = scene_world.spawn((GameRootObject,TransformBundle::default())).id();
+    
+    for (e,t) in world.query_filtered::<(Entity,&Transform),With<EditorObject>>().iter(world) {
+        let id = scene_world.spawn(t.clone()).set_parent(root).id();
+        let mut entity_mut = scene_world.entity_mut(id);
+        if world.entity(e).contains::<PlayerSpawnPoint>() {
+            entity_mut.insert(PlayerSpawnPoint);
+        }
+        if let Some(obj) = world.entity(e).get::<EndPoint>() {
+            entity_mut.insert(obj.clone());
+        }
+        if let Some(obj) = world.entity(e).get::<Obstacle>() {
+            entity_mut.insert(obj.clone());
+        }
+    }
+
+    let scene = DynamicScene::from_world(&scene_world);
+    let type_registry = scene_world.resource::<AppTypeRegistry>();
+    let serialized_scene = scene.serialize_ron(type_registry).unwrap();
+
+    // Showing the scene in the console
+    info!("{}", serialized_scene);
+
+    #[cfg(not(target_arch = "wasm32"))]
+    IoTaskPool::get()
+        .spawn(async move {
+            // Write the scene RON data to file
+            File::create(format!("assets/scenes/{filename}"))
+                .and_then(|mut file| file.write(serialized_scene.as_bytes()))
+                .expect("Error while writing scene to file");
+        })
+        .detach();
 }
