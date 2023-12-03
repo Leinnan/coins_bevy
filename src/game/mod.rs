@@ -25,7 +25,10 @@ impl Plugin for GamePlugin {
             .register_type::<Obstacle>()
             .register_type::<GameRootObject>()
             .add_event::<GameProgressEvent>()
-            .add_systems(OnEnter(MainState::Game), (load_scene_system,setup_world, reset_progress))
+            .add_systems(
+                OnEnter(MainState::Game),
+                (load_scene_system, setup_world, reset_progress),
+            )
             .add_systems(
                 OnExit(MainState::Game),
                 despawn_recursive_by_component::<GameRootObject>,
@@ -136,11 +139,14 @@ fn setup_graphics(mut commands: Commands, _asset_server: Res<AssetServer>) {
 fn load_scene_system(mut commands: Commands, asset_server: Res<AssetServer>) {
     // "Spawning" a scene bundle creates a new entity and spawns new instances
     // of the given scene's entities as children of that entity.
-    commands.spawn((DynamicSceneBundle {
-        // Scenes are loaded just like any other asset.
-        scene: asset_server.load("scenes/01.scn.ron"),
-        ..default()
-    },GameRootObject));
+    commands.spawn((
+        DynamicSceneBundle {
+            // Scenes are loaded just like any other asset.
+            scene: asset_server.load("scenes/01.scn.ron"),
+            ..default()
+        },
+        GameRootObject,
+    ));
 }
 
 pub fn setup_world(mut commands: Commands, asset_server: Res<AssetServer>) {

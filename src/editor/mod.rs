@@ -1,12 +1,12 @@
 use crate::consts::*;
-use crate::game::components::{EndPoint, Obstacle, PlayerSpawnPoint, GameRootObject};
+use crate::game::components::{EndPoint, Obstacle, PlayerSpawnPoint};
 use crate::input::MouseWorldPosition;
 use crate::{states::MainState, utils::exit_to_menu_on_escape};
 use bevy::prelude::*;
 use bevy::{
     app::{Plugin, Update},
     ecs::schedule::common_conditions::in_state,
-    tasks::IoTaskPool
+    tasks::IoTaskPool,
 };
 use bevy_egui::{egui, EguiContext};
 use std::{fs::File, io::Write};
@@ -39,7 +39,12 @@ impl Plugin for MapEditorPlugin {
             )
             .add_systems(
                 Update,
-                (inspector_ui, exit_to_menu_on_escape, draw_objects,add_missing_info)
+                (
+                    inspector_ui,
+                    exit_to_menu_on_escape,
+                    draw_objects,
+                    add_missing_info,
+                )
                     .run_if(in_state(MainState::Editor)),
             );
     }
@@ -53,20 +58,21 @@ fn startup(mut commands: Commands) {
     ));
 }
 
-fn add_missing_info(q: Query<&Children,(With<EditorMapRoot>,Without<EditorObject>)>,
-q2: Query<Entity,(With<EditorObject>,Without<GlobalTransform>)>,
-    mut commands: Commands)
-{
-        for c in q.iter() {
-            for e in c.iter() {
-                if let Some(mut entity_cmd) = commands.get_entity(*e) {
-                    entity_cmd.insert(EditorObject);
-                }
+fn add_missing_info(
+    q: Query<&Children, (With<EditorMapRoot>, Without<EditorObject>)>,
+    q2: Query<Entity, (With<EditorObject>, Without<GlobalTransform>)>,
+    mut commands: Commands,
+) {
+    for c in q.iter() {
+        for e in c.iter() {
+            if let Some(mut entity_cmd) = commands.get_entity(*e) {
+                entity_cmd.insert(EditorObject);
             }
         }
-        for e in q2.iter() {
-            commands.entity(e).insert(GlobalTransform::default());
-        }
+    }
+    for e in q2.iter() {
+        commands.entity(e).insert(GlobalTransform::default());
+    }
 }
 
 fn draw_objects(
@@ -89,8 +95,12 @@ fn draw_objects(
     }
 }
 
-fn inspector_ui(world: &mut World, mut enum_val: Local<ActionToDo>, mut ui_over: Local<bool>, mut filename: Local<String>) {
-
+fn inspector_ui(
+    world: &mut World,
+    mut enum_val: Local<ActionToDo>,
+    mut ui_over: Local<bool>,
+    mut filename: Local<String>,
+) {
     use bevy::window::PrimaryWindow;
     let mut egui_context = world
         .query_filtered::<&mut EguiContext, With<PrimaryWindow>>()
@@ -152,7 +162,7 @@ fn inspector_ui(world: &mut World, mut enum_val: Local<ActionToDo>, mut ui_over:
                     ActionToDo::SetPlayerSpawnPoint => {
                         if let Some(e) = get_closest_object_with_type::<PlayerSpawnPoint>(world) {
                             world.entity_mut(e).insert(transform);
-                        }else {
+                        } else {
                             world
                                 .spawn((transform, PlayerSpawnPoint))
                                 .set_parent(world_root);
@@ -161,7 +171,7 @@ fn inspector_ui(world: &mut World, mut enum_val: Local<ActionToDo>, mut ui_over:
                     ActionToDo::SetEndPoint => {
                         if let Some(e) = get_closest_object_with_type::<EndPoint>(world) {
                             world.entity_mut(e).insert(transform);
-                        }else {
+                        } else {
                             world
                                 .spawn((transform, EndPoint { radius: 80.0 }))
                                 .set_parent(world_root);
@@ -216,9 +226,12 @@ pub fn save_map(world: &mut World, filename: String) {
     let mut scene_world = World::new();
     let type_registry = world.resource::<AppTypeRegistry>().clone();
     scene_world.insert_resource(type_registry);
-    
-    for (e,t) in world.query_filtered::<(Entity,&Transform),With<EditorObject>>().iter(world) {
-        let id = scene_world.spawn(t.clone()).id();
+
+    for (e, t) in world
+        .query_filtered::<(Entity, &Transform), With<EditorObject>>()
+        .iter(world)
+    {
+        let id = scene_world.spawn(*t).id();
         let mut entity_mut = scene_world.entity_mut(id);
         if world.entity(e).contains::<PlayerSpawnPoint>() {
             entity_mut.insert(PlayerSpawnPoint);
@@ -251,18 +264,26 @@ pub fn save_map(world: &mut World, filename: String) {
 
 fn load_map(world: &mut World, filename: String) {
     let world_root = world
-    .query_filtered::<Entity, With<EditorMapRoot>>()
-    .get_single(world)
-    .unwrap();
+        .query_filtered::<Entity, With<EditorMapRoot>>()
+        .get_single(world)
+        .unwrap();
 
-    world.get_entity_mut(world_root).unwrap().despawn_recursive();
+    world
+        .get_entity_mut(world_root)
+        .unwrap()
+        .despawn_recursive();
 
-    let scene = world.get_resource_mut::<AssetServer>().unwrap().load(format!("scenes/{filename}"));
-    world.spawn((DynamicSceneBundle {
-        // Scenes are loaded just like any other asset.
-        scene,
-        ..default()
-    },
-    Name::new("MapEditor"),
-    EditorMapRoot));
+    let scene = world
+        .get_resource_mut::<AssetServer>()
+        .unwrap()
+        .load(format!("scenes/{filename}"));
+    world.spawn((
+        DynamicSceneBundle {
+            // Scenes are loaded just like any other asset.
+            scene,
+            ..default()
+        },
+        Name::new("MapEditor"),
+        EditorMapRoot,
+    ));
 }
