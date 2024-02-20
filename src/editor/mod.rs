@@ -44,7 +44,7 @@ impl Plugin for MapEditorPlugin {
                     exit_to_menu_on_escape,
                     draw_objects,
                     add_missing_info,
-                )
+                ).chain()
                     .run_if(in_state(MainState::Editor)),
             );
     }

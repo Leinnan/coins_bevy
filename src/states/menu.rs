@@ -109,7 +109,6 @@ fn setup_menu(mut commands: Commands, asset_server: Res<AssetServer>) {
                         ..default()
                     },
                 ),
-                #[cfg(not(target_arch = "wasm32"))]
                 (
                     "Run Editor",
                     MainMenuButton::RunEditor,
