@@ -64,7 +64,7 @@ fn my_cursor_system(
 }
 
 fn player_input(
-    buttons: Res<Input<MouseButton>>,
+    buttons: Res<ButtonInput<MouseButton>>,
     mouse_pos: Res<MouseWorldPosition>,
     settings: Res<GameplaySettings>,
     mut aim_event: EventWriter<AimingEvent>,

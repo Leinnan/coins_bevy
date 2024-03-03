@@ -44,7 +44,8 @@ impl Plugin for MapEditorPlugin {
                     exit_to_menu_on_escape,
                     draw_objects,
                     add_missing_info,
-                ).chain()
+                )
+                    .chain()
                     .run_if(in_state(MainState::Editor)),
             );
     }
@@ -149,7 +150,7 @@ fn inspector_ui(
             }
             *ui_over = ui.ui_contains_pointer();
             if world
-                .get_resource::<Input<MouseButton>>()
+                .get_resource::<ButtonInput<MouseButton>>()
                 .unwrap()
                 .just_released(MouseButton::Left)
                 && !*ui_over

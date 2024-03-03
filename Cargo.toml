@@ -16,8 +16,8 @@ opt-level = 3
 
 [dependencies]
 console_error_panic_hook = "0.1"
-bevy = "0.12"
-bevy_egui = "0.24"
-bevy-inspector-egui = "0.22"
-bevy_rapier2d = "0.23"
-bevy_button_released_plugin = "0.3"
+bevy = "0.13"
+bevy_egui = "0.25"
+bevy-inspector-egui = "0.23"
+bevy_rapier2d = "0.25"
+bevy_button_released_plugin = "0.5"

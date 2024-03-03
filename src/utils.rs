@@ -11,7 +11,7 @@ pub fn despawn_recursive_by_component<T: bevy::prelude::Component>(
     }
 }
 pub fn exit_to_menu_on_escape(
-    input: Res<Input<KeyCode>>,
+    input: Res<ButtonInput<KeyCode>>,
     mut next_state: ResMut<NextState<MainState>>,
 ) {
     if input.just_released(KeyCode::Escape) {

@@ -82,7 +82,7 @@ fn setup_menu(mut commands: Commands, asset_server: Res<AssetServer>) {
                         color: Color::hex("ECE3CE").unwrap(),
                     },
                 )
-                .with_text_alignment(TextAlignment::Center)
+                .with_text_justify(JustifyText::Center)
                 .with_style(Style {
                     margin: UiRect {
                         top: Val::Percent(5.0),

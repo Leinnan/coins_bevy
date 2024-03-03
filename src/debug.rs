@@ -29,7 +29,7 @@ fn git_info(mut commands: Commands, asset_server: Res<AssetServer>) {
                 color: MY_ACCENT_COLOR,
             },
         )
-        .with_text_alignment(TextAlignment::Right)
+        .with_text_justify(JustifyText::Right)
         .with_style(Style {
             position_type: PositionType::Absolute,
             bottom: Val::Px(5.0),
@@ -46,7 +46,7 @@ fn inspector_ui(
 ) {
     use bevy::window::PrimaryWindow;
     if world
-        .get_resource::<Input<KeyCode>>()
+        .get_resource::<ButtonInput<KeyCode>>()
         .unwrap()
         .just_released(KeyCode::F1)
     {

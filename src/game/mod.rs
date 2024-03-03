@@ -167,7 +167,7 @@ pub fn setup_world(mut commands: Commands, asset_server: Res<AssetServer>) {
                 color: consts::MY_ACCENT_COLOR,
             },
         )
-        .with_text_alignment(TextAlignment::Left)
+        .with_text_justify(JustifyText::Left)
         .with_style(Style {
             position_type: PositionType::Absolute,
             top: Val::Px(15.0),
